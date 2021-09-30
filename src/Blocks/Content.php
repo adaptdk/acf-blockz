@@ -3,6 +3,7 @@
 namespace Prophe1\ACFBlockz\Blocks;
 
 use WP_Block_Type_Registry;
+use function App\config;
 use function App\template;
 
 /**
@@ -66,6 +67,13 @@ class Content
     private $block_classes = [];
 
     /**
+     * Block styles
+     *
+     * @var array
+     */
+    private $block_styles = [];
+
+    /**
      * The content of a block
      *
      * @var string
@@ -114,13 +122,6 @@ class Content
     private $slug;
 
     /**
-     * The block width
-     *
-     * @var string
-     */
-    private $width;
-
-    /**
      * The block counter
      * Used for the id
      *
@@ -139,27 +140,32 @@ class Content
     private $alignmentClasses;
 
     /**
+     * @var boolean
+     */
+    private $has_background_color;
+
+    /**
      * Blocks constructor.
      */
     public function __construct()
     {
         $this->containerClasses = apply_filters('content/containerClasses', [
-            'sm' => 'inner--small',
-            'md' => 'inner--medium',
+            'sm' => 'inner--prose',
+            'md' => 'inner--content',
             'full' => 'inner--full'
         ]);
 
         $this->alignmentClasses = apply_filters('content/alignmentClasses', [
-            'center' => 'align-center',
-            'left' => 'align-left',
-            'right' => 'align-right'
+            'center' => 'text-center',
+            'left' => 'text-left',
+            'right' => 'text-right'
         ]);
 
         $containers = apply_filters('content/render', [
-            'default_inner' => $this->getContainerClass('md'),
-            'inner_small' => [],
+            'default_inner' => $this->getContainerClass('sm'),
+            'inner_prose' => [],
             'no_container' => [],
-            'small_default' => [],
+            'prose_default' => [],
             'no_wrap' => []
         ]);
 
@@ -293,27 +299,14 @@ class Content
     }
 
     /**
-     * Set the width
-     *
-     * @return $this
-     */
-    private function setWidth()
-    {
-        // Set Default Inner
-        $this->width = isset($block['attrs']['width']) && $this->block['attrs']['width'] ? "--width:" . $this->block['attrs']['width'] . "%" : false;
-
-        return $this;
-    }
-
-    /**
      * Overwrites the default container
      *
      * @return $this
      */
     private function setBlockContainer()
     {
-        // sets inner--small container around
-        if (in_array($this->block['blockName'], $this->getContainers('inner_small'))) {
+        // sets inner--prose container around
+        if (in_array($this->block['blockName'], $this->getContainers('inner_prose'))) {
             $this->setContainer($this->getContainerClass('sm'));
         }
 
@@ -336,12 +329,13 @@ class Content
      */
     private function setBlockAlignment()
     {
-        // Set the block container to small then allow overrides with alignment options
-        if (in_array($this->block['blockName'], $this->getContainers('small_default'), true)) {
+        // Set the block container to prose then allow overrides with alignment options
+        if (in_array($this->block['blockName'], $this->getContainers('prose_default'), true)) {
             $this->setContainer($this->getContainerClass('sm'));
         }
 
         if (isset($this->block['attrs']['align'])) {
+
             switch ($this->block['attrs']['align']) {
                 case 'full':
                     $this->setContainer($this->getContainerClass('full'));
@@ -365,8 +359,8 @@ class Content
             }
         }
 
-        // Force inner--small
-        if (in_array($this->block['blockName'], $this->getContainers('inner_small'), true)) {
+        // Force inner--prose
+        if (in_array($this->block['blockName'], $this->getContainers('inner_prose'), true)) {
             $this->setContainer($this->getContainerClass('sm'));
         }
 
@@ -380,9 +374,78 @@ class Content
      */
     private function setBackground()
     {
-        if (isset($this->block['attrs']['id']) && $background_color = get_field('block_background_color',
-                $this->block['attrs']['id'])) {
-            $this->block_classes[] = ' has-background--' . $background_color;
+        // Custom blocks
+        if (isset($this->block['attrs']['data']['block_background_color']) && $bg_color = $this->block['attrs']['data']['block_background_color']) {
+            $tw_class = array_search($bg_color, config('theme.colors'));
+
+            if ($tw_class) {
+                $this->block_classes[] = sprintf('bg-%s py-8 lg:py-12', $tw_class);
+            } else {
+                $this->block_classes[] = 'py-8 lg:py-12';
+                $this->block_styles[] = sprintf('background-color:%s;', $bg_color);
+            }
+        }
+
+        // Core blocks
+        if (isset($this->block['attrs']['backgroundColor']) && $bg_class = $this->block['attrs']['backgroundColor']) {
+            $this->block_classes[] = sprintf('has-background bg-%s py-6 lg:py-8', $bg_class);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Adds a text class to a block
+     *
+     * @return $this
+     */
+    private function setTextColor()
+    {
+        // Custom blocks
+        if (isset($this->block['attrs']['data']['block_text_color']) && $text_color = $this->block['attrs']['data']['block_text_color']) {
+            $tw_class = array_search($text_color, config('theme.colors'));
+
+            if ($tw_class) {
+                $this->block_classes[] = sprintf('text-%s', $tw_class);
+            } else {
+                $this->block_styles[] = sprintf('color:%s;', $text_color);
+            }
+        }
+
+        // Core blocks
+        if (isset($this->block['attrs']['textColor']) && $text_class = $this->block['attrs']['textColor']) {
+            $this->block_classes[] = sprintf('text-%s', $text_class);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Adds spacing (margin or padding) class to a block
+     *
+     * @return $this
+     */
+    private function setSpacing()
+    {
+        $spacing_size_top = 'none';
+        $spacing_size_bottom = 'none';
+
+        // Only custom blocks
+
+        if (isset($this->block['attrs']['data']['block_spacing_top']) && $spacing_top = $this->block['attrs']['data']['block_spacing_top']) {
+            $spacing_size_top = $spacing_top;
+        }
+
+        if (isset($this->block['attrs']['data']['block_spacing_bottom']) && $spacing_bottom = $this->block['attrs']['data']['block_spacing_bottom']) {
+            $spacing_size_bottom = $spacing_bottom;
+        }
+
+        if ($this->type !== 'core' && $spacing_size_top !== 'none') {
+            $this->block_classes[] = $spacing_size_top;
+        }
+
+        if ($this->type !== 'core' && $spacing_size_bottom !== 'none') {
+            $this->block_classes[] = $spacing_size_bottom;
         }
 
         return $this;
@@ -419,7 +482,7 @@ class Content
             }
         }
 
-        if ($this->is_dynamic) {
+        if ($this->is_dynamic && !$this->block_content) {
             global $post;
             $global_post = $post;
             $this->block_content = $this->block_type->render($this->block['attrs'], $this->block_content);
@@ -463,17 +526,15 @@ class Content
         $content->setupBlock()
             ->setTypeAndSlug()
             ->setId()
-            ->setWidth()
             ->setBlockContainer()
             ->setBlockAlignment()
             ->setBackground()
+            ->setTextColor()
+            ->setSpacing()
             ->setBlockClasses()
             ->setBlockContent();
 
-
         if (!$content->isWrapped()) {
-            echo 'NOT WRAPPED';
-
             return $content->block_content;
         }
 
@@ -486,9 +547,9 @@ class Content
                 'type'      => $content->type,
                 'slug'      => str_replace(['acf-'], '', $content->slug),
                 'class'     => implode(' ', $content->block_classes),
+                'style'     => implode(' ', $content->block_styles),
                 'align'     => $content->block_alignment,
                 'ids'       => $content->id,
-                'width'     => $content->width
             ]
         );
     }

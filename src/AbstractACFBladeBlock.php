@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Prophe1\ACFBlockz;
 
+use Prophe1\ACFBlockz\Blocks\Content;
 use function App\template;
 
 /**
@@ -48,6 +49,13 @@ abstract class AbstractACFBladeBlock extends AbstractBladeBlock
         // Overwrite controller key if this name was taken
         $this->acf['controller'] = $this;
 
-        echo template($frontend, $this->acf);
+        echo Content::render(template($frontend, $this->acf), [
+            'blockName' => $block['name'],
+            'attrs' => [
+                'align' => $this->getAlignment(),
+                'data' => $this->acf,
+                'className' =>  $block['className'],
+            ]
+        ]);
     }
 }
