@@ -22,12 +22,12 @@ Add this to Your WordPress composer.json file:
     {
       "type": "package",
       "package": {
-        "name": "Prophe1/acf-blockz",
+        "name": "adaptdk/acf-blockz",
         "version": "master",
         "type": "wordpress-muplugin",
         "source": {
           "type": "git",
-          "url": "https://github.com/Prophe1/acf-blockz.git",
+          "url": "https://github.com/adaptdk/acf-blockz.git",
           "reference": "master"
         }
       }
@@ -36,7 +36,7 @@ Add this to Your WordPress composer.json file:
   ```
 And then, require it:
 ```
-"prophe1/acf-blockz": "dev-master"
+"adaptdk/acf-blockz": "dev-master"
 ```
 
 Or just upload it with WordPress plugin installer.
