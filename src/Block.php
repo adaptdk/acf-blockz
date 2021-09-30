@@ -65,7 +65,7 @@ class Block
      * @since 0.1.0
      * @var $post_types array
      */
-    protected $post_types = ['post', 'page'];
+    protected $post_types = [];
 
     /**
      * The default display mode of the block that is shown to the user.
@@ -90,6 +90,13 @@ class Block
      * @var $supports array
      */
     protected $supports = [];
+
+    /**
+     * Show block only inside certain blocks
+     * @since 0.2.4
+     * @var array|null
+     */
+    protected $parent = null;
 
     /**
      * The blocks directory path.
@@ -137,6 +144,8 @@ class Block
         $this->supports    = $settings['supports'];
         $this->post_types  = $settings['post_types'];
         $this->align       = $settings['align'];
+        $this->mode        = $settings['mode'];
+        $this->parent      = $settings['parent'];
 
         // Set ACF Fields to the block.
         $this->fields = $this->registerFields();
@@ -172,12 +181,14 @@ class Block
     public function getDefaultSettings(): array
     {
         return [
-            'post_types'    => array('post', 'page'),
+            'post_types'    => [],
             'icon'          => apply_filters('acfblocks/default_icon', 'admin-generic'),
             'dir'           => '',
             'enabled'       => true,
-            'supports'      => array(),
+            'supports'      => [],
             'align'         => false,
+            'mode'          => 'preview',
+            'parent'        => []
         ];
     }
 
@@ -281,6 +292,17 @@ class Block
     }
 
     /**
+     * Get the list of parents
+     *
+     * @since 0.2.4
+     * @return array
+     */
+    public function getParent(): ?array
+    {
+        return $this->parent;
+    }
+
+    /**
      * Get the block alignment
      *
      * @since 0.1.0
@@ -310,7 +332,7 @@ class Block
      */
     public function getBlockData(): array
     {
-        return [
+        return array_filter([
             'name' => $this->getName(),
             'title' => $this->getTitle(),
             'description' => $this->getDescription(),
@@ -321,7 +343,8 @@ class Block
             'mode' => $this->getMode(),
             'align' => $this->getAlignment(),
             'supports' => $this->getSupports(),
-        ];
+            'parent' => $this->getParent()
+        ]);
     }
 
     /**

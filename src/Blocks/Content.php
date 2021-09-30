@@ -129,15 +129,38 @@ class Content
     public static $counter = 0;
 
     /**
+     * @var array
+     */
+    private $containerClasses;
+
+    /**
+     * @var array
+     */
+    private $alignmentClasses;
+
+    /**
      * Blocks constructor.
      */
     public function __construct()
     {
+        $this->containerClasses = apply_filters('content/containerClasses', [
+            'sm' => 'inner--small',
+            'md' => 'inner--medium',
+            'full' => 'inner--full'
+        ]);
+
+        $this->alignmentClasses = apply_filters('content/alignmentClasses', [
+            'center' => 'align-center',
+            'left' => 'align-left',
+            'right' => 'align-right'
+        ]);
+
         $containers = apply_filters('content/render', [
-            'default_inner' => 'inner--medium',
-            'inner_small' => array(),
-            'no_container' => array(),
-            'small_default' => array()
+            'default_inner' => $this->getContainerClass('md'),
+            'inner_small' => [],
+            'no_container' => [],
+            'small_default' => [],
+            'no_wrap' => []
         ]);
 
         $this->setContainers($containers);
@@ -146,8 +169,26 @@ class Content
     }
 
     /**
+     * @param $position string
+     * @return string
+     */
+    private function getAlignmentClass($position): string
+    {
+        return $this->alignmentClasses[$position];
+    }
+
+    /**
+     * @param $size string
+     * @return string
+     */
+    private function getContainerClass($size): string
+    {
+        return $this->containerClasses[$size];
+    }
+
+    /**
      * @param string $key
-     * @return array
+     * @return array|string
      */
     public function getContainers(string $key)
     {
@@ -185,7 +226,7 @@ class Content
      */
     public function isEmpty()
     {
-        return (!trim($this->block_content) && empty($this->block['blockName'])) || (!trim($this->block_content) && empty($this->block['blockName']));
+        return !trim($this->block_content) && !trim($this->block['innerHTML']) && empty($this->block['blockName']);
     }
 
     /**
@@ -273,7 +314,7 @@ class Content
     {
         // sets inner--small container around
         if (in_array($this->block['blockName'], $this->getContainers('inner_small'))) {
-            $this->setContainer('inner--small');
+            $this->setContainer($this->getContainerClass('sm'));
         }
 
         // removes inner wrapper for spacer component
@@ -297,36 +338,36 @@ class Content
     {
         // Set the block container to small then allow overrides with alignment options
         if (in_array($this->block['blockName'], $this->getContainers('small_default'), true)) {
-            $this->setContainer('inner--small');
+            $this->setContainer($this->getContainerClass('sm'));
         }
 
         if (isset($this->block['attrs']['align'])) {
             switch ($this->block['attrs']['align']) {
                 case 'full':
-                    $this->setContainer('inner--full');
+                    $this->setContainer($this->getContainerClass('full'));
                     break;
 
                 case 'wide':
-                    $this->setContainer('inner--medium');
+                    $this->setContainer($this->getContainerClass('md'));
                     break;
 
                 case 'center':
-                    $this->block_alignment = ' align-center';
+                    $this->block_alignment = sprintf(' %s', $this->getAlignmentClass('center'));
                     break;
 
                 case 'left':
-                    $this->block_alignment = ' align-left';
+                    $this->block_alignment = sprintf(' %s', $this->getAlignmentClass('left'));
                     break;
 
                 case 'right':
-                    $this->block_alignment = ' align-right';
+                    $this->block_alignment = sprintf(' %s', $this->getAlignmentClass('right'));
                     break;
             }
         }
 
         // Force inner--small
         if (in_array($this->block['blockName'], $this->getContainers('inner_small'), true)) {
-            $this->setContainer('inner--small');
+            $this->setContainer($this->getContainerClass('sm'));
         }
 
         return $this;
@@ -354,8 +395,8 @@ class Content
      */
     private function setBlockClasses()
     {
-        if (isset($this->block['className'])) {
-            $this->block_classes[] = $this->block['className'];
+        if (isset($this->block['attrs']['className'])) {
+            $this->block_classes[] = $this->block['attrs']['className'];
         }
         return $this;
     }
@@ -366,8 +407,16 @@ class Content
     private function setBlockContent()
     {
         foreach ($this->block['innerContent'] as $chunk) {
-            $this->block_content = is_string($chunk) ? $chunk : \render_gutenberg_blocks(true,
-                $this->block['innerBlocks'][$this->block_index++], $this->disable_inner_container, $this->columns);
+            if (is_string($chunk)) {
+                $this->block_content .= $chunk;
+            } else {
+                $this->block_content .= self::render(
+                    '',
+                    $this->block['innerBlocks'][$this->block_index++],
+                    $this->disable_inner_container,
+                    $this->columns
+                );
+            }
         }
 
         if ($this->is_dynamic) {
@@ -376,6 +425,18 @@ class Content
             $this->block_content = $this->block_type->render($this->block['attrs'], $this->block_content);
             $post = $global_post;
         }
+    }
+
+    /**
+     * @return bool
+     */
+    private function isWrapped()
+    {
+        if (!in_array($this->block['blockName'], $this->getContainers('no_wrap'))) {
+            return true;
+        }
+
+        return false;
     }
 
 
@@ -409,6 +470,12 @@ class Content
             ->setBlockClasses()
             ->setBlockContent();
 
+
+        if (!$content->isWrapped()) {
+            echo 'NOT WRAPPED';
+
+            return $content->block_content;
+        }
 
         return template(
             'blocks.block-container',
