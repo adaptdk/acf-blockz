@@ -56,6 +56,6 @@ abstract class AbstractACFBladeBlock extends AbstractBladeBlock
                 'data' => $this->acf,
                 'className' =>  $block['className'],
             ]
-        ]);
+        ], false, false, true);
     }
 }

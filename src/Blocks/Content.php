@@ -145,6 +145,11 @@ class Content
     private $has_background_color;
 
     /**
+     * @var false|mixed
+     */
+    private $is_wrapped;
+
+    /**
      * Blocks constructor.
      */
     public function __construct()
@@ -495,7 +500,7 @@ class Content
      */
     private function isWrapped()
     {
-        if (!in_array($this->block['blockName'], $this->getContainers('no_wrap'))) {
+        if ($this->is_wrapped && !in_array($this->block['blockName'], $this->getContainers('no_wrap'))) {
             return true;
         }
 
@@ -510,7 +515,7 @@ class Content
      * @param  bool  $columns
      * @return bool|\Illuminate\Contracts\View\Factory|\Illuminate\View\Factory|\Illuminate\View\View
      */
-    public static function render($block_content = '', array $block, $inner = false, $columns = false)
+    public static function render($block_content = '', array $block, $inner = false, $columns = false, $is_wrapped = false)
     {
         $content = new Content();
 
@@ -518,6 +523,7 @@ class Content
         $content->block = $block;
         $content->inner = $inner;
         $content->columns = $columns;
+        $content->is_wrapped = $is_wrapped;
 
         if ($content->isEmpty() || $content->removeEmptyParagraphTags()) {
             return false;
