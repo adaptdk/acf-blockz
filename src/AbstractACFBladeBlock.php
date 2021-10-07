@@ -49,13 +49,13 @@ abstract class AbstractACFBladeBlock extends AbstractBladeBlock
         // Overwrite controller key if this name was taken
         $this->acf['controller'] = $this;
 
-        echo Content::render(template($frontend, $this->acf), [
+        echo Content::render(template($frontend, array_merge($this->acf, ['block' => $block])), [
             'blockName' => $block['name'],
             'attrs' => [
                 'align' => $this->getAlignment(),
                 'data' => $this->acf,
                 'className' =>  $block['className'],
             ]
-        ], false, false, true);
+        ], false, false, $block['is_wrapped'] ?? false);
     }
 }

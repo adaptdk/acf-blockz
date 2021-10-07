@@ -67,11 +67,25 @@ class Content
     private $block_classes = [];
 
     /**
+     * Block inner classes
+     *
+     * @var array
+     */
+    private $block_inner_classes = [];
+
+    /**
      * Block styles
      *
      * @var array
      */
     private $block_styles = [];
+
+    /**
+     * Block inner styles
+     *
+     * @var array
+     */
+    private $block_inner_styles = [];
 
     /**
      * The content of a block
@@ -145,11 +159,6 @@ class Content
     private $has_background_color;
 
     /**
-     * @var false|mixed
-     */
-    private $is_wrapped;
-
-    /**
      * Blocks constructor.
      */
     public function __construct()
@@ -169,9 +178,18 @@ class Content
         $containers = apply_filters('content/render', [
             'default_inner' => $this->getContainerClass('sm'),
             'inner_prose' => [],
-            'no_container' => [],
+            'no_container' => [
+                'core/column',
+            ],
             'prose_default' => [],
-            'no_wrap' => []
+            'no_wrap' => [],
+            'custom_bg_inner' => [
+                'acf/simple-quote',
+            ],
+            'core_bg_outer' => [
+                'core/columns',
+                'core/column',
+            ],
         ]);
 
         $this->setContainers($containers);
@@ -379,21 +397,44 @@ class Content
      */
     private function setBackground()
     {
-        // Custom blocks
+        // Custom blocks (set bg color on outer container by default)
         if (isset($this->block['attrs']['data']['block_background_color']) && $bg_color = $this->block['attrs']['data']['block_background_color']) {
             $tw_class = array_search($bg_color, config('theme.colors'));
 
+            // Set bg color on the inner container
+            if (in_array($this->block['blockName'], $this->getContainers('custom_bg_inner'), true)) {
+                $this->block_classes[] = 'has-background';
+
+                if ($tw_class) {
+                    $this->block_inner_classes[] = sprintf('bg-%s py-6 lg:py-8', $tw_class);
+                } else {
+                    $this->block_inner_classes[] = 'py-6 lg:py-8';
+                    $this->block_inner_styles[] = sprintf('background-color:%s;', $bg_color);
+                }
+
+                return $this;
+            }
+
             if ($tw_class) {
-                $this->block_classes[] = sprintf('bg-%s py-8 lg:py-12', $tw_class);
+                $this->block_classes[] = sprintf('has-background bg-%s py-8 lg:py-12', $tw_class);
             } else {
-                $this->block_classes[] = 'py-8 lg:py-12';
+                $this->block_classes[] = 'has-background py-8 lg:py-12';
                 $this->block_styles[] = sprintf('background-color:%s;', $bg_color);
             }
         }
 
-        // Core blocks
+        // Core blocks (seet bg color on inner container by default)
         if (isset($this->block['attrs']['backgroundColor']) && $bg_class = $this->block['attrs']['backgroundColor']) {
-            $this->block_classes[] = sprintf('has-background bg-%s py-6 lg:py-8', $bg_class);
+
+            // Set bg color on the outer container
+            if (in_array($this->block['blockName'], $this->getContainers('core_bg_outer'), true)) {
+                $this->block_classes[] = sprintf('has-background bg-%s py-8 lg:py-12', $bg_class);
+
+                return $this;
+            }
+
+            $this->block_classes[] = 'has-background';
+            $this->block_inner_classes[] = sprintf('bg-%s py-6 lg:py-8', $bg_class);
         }
 
         return $this;
@@ -490,6 +531,7 @@ class Content
         if ($this->is_dynamic && !$this->block_content) {
             global $post;
             $global_post = $post;
+            $this->block['attrs']['is_wrapped'] = true;
             $this->block_content = $this->block_type->render($this->block['attrs'], $this->block_content);
             $post = $global_post;
         }
@@ -500,7 +542,7 @@ class Content
      */
     private function isWrapped()
     {
-        if ($this->is_wrapped && !in_array($this->block['blockName'], $this->getContainers('no_wrap'))) {
+        if (!in_array($this->block['blockName'], $this->getContainers('no_wrap'))) {
             return true;
         }
 
@@ -523,7 +565,6 @@ class Content
         $content->block = $block;
         $content->inner = $inner;
         $content->columns = $columns;
-        $content->is_wrapped = $is_wrapped;
 
         if ($content->isEmpty() || $content->removeEmptyParagraphTags()) {
             return false;
@@ -540,22 +581,28 @@ class Content
             ->setBlockClasses()
             ->setBlockContent();
 
-        if (!$content->isWrapped()) {
+        if (!$content->isWrapped() || $is_wrapped) {
             return $content->block_content;
+        }
+
+        if ($content->slug === 'columns') {
+            $content->block_classes[] = sprintf('num-columns-%s', $content->block_index);
         }
 
         return template(
             'blocks.block-container',
             [
-                'block'     => $content->block,
-                'content'   => $content->block_content,
-                'container' => $content->getContainer(),
-                'type'      => $content->type,
-                'slug'      => str_replace(['acf-'], '', $content->slug),
-                'class'     => implode(' ', $content->block_classes),
-                'style'     => implode(' ', $content->block_styles),
-                'align'     => $content->block_alignment,
-                'ids'       => $content->id,
+                'block'         => $content->block,
+                'content'       => $content->block_content,
+                'container'     => $content->getContainer(),
+                'type'          => $content->type,
+                'slug'          => str_replace(['acf-'], '', $content->slug),
+                'class'         => implode(' ', $content->block_classes),
+                'style'         => implode(' ', $content->block_styles),
+                'inner_class'   => implode(' ', $content->block_inner_classes),
+                'inner_style'   => implode(' ', $content->block_inner_styles),
+                'align'         => $content->block_alignment,
+                'ids'           => $content->id,
             ]
         );
     }
