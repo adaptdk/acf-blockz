@@ -508,10 +508,6 @@ class Content
             $this->block_classes[] = $this->block['attrs']['className'];
         }
 
-        if ($this->slug === 'columns') {
-            $this->block_classes[] = sprintf('num-columns-%s', $this->block_index);
-        }
-
         return $this;
     }
 
@@ -553,6 +549,10 @@ class Content
             $this->block['attrs']['is_wrapped'] = true;
             $this->block_content = $this->block_type->render($this->block['attrs'], $this->block_content);
             $post = $global_post;
+        }
+
+        if ($this->slug === 'columns') {
+            $this->block_classes[] = sprintf('num-columns-%s', $this->block_index);
         }
     }
 
