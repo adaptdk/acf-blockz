@@ -507,6 +507,25 @@ class Content
         if (isset($this->block['attrs']['className'])) {
             $this->block_classes[] = $this->block['attrs']['className'];
         }
+
+        if ($this->slug === 'columns') {
+            $this->block_classes[] = sprintf('num-columns-%s', $this->block_index);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Specifies width (flex-basis) on a block
+     *
+     * @return $this
+     */
+    private function setBlockWidth()
+    {
+        if (isset($this->block['attrs']['width'])) {
+            $this->block_styles[] = sprintf('flex-basis:%s;', $this->block['attrs']['width']);
+        }
+
         return $this;
     }
 
@@ -579,14 +598,11 @@ class Content
             ->setTextColor()
             ->setSpacing()
             ->setBlockClasses()
+            ->setBlockWidth()
             ->setBlockContent();
 
         if (!$content->isWrapped() || $is_wrapped) {
             return $content->block_content;
-        }
-
-        if ($content->slug === 'columns') {
-            $content->block_classes[] = sprintf('num-columns-%s', $content->block_index);
         }
 
         return template(
