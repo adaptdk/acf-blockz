@@ -185,6 +185,7 @@ class Content
             'no_wrap' => [],
             'custom_bg_inner' => [
                 'acf/simple-quote',
+                'acf/icon-teaser',
             ],
             'core_bg_outer' => [
                 'core/columns',
