@@ -166,7 +166,7 @@ class Content
         $this->containerClasses = apply_filters('content/containerClasses', [
             'sm' => 'inner--prose',
             'md' => 'inner--content',
-            'full' => 'inner--full'
+            'full' => 'inner--full',
         ]);
 
         $this->alignmentClasses = apply_filters('content/alignmentClasses', [
@@ -177,6 +177,9 @@ class Content
 
         $containers = apply_filters('content/render', [
             'default_inner' => $this->getContainerClass('sm'),
+            'custom_inner' => [
+                'inner--small-image-teaser' => 'acf/small-image-teaser',
+            ],
             'inner_prose' => [],
             'no_container' => [
                 'core/column',
@@ -186,6 +189,7 @@ class Content
             'custom_bg_inner' => [
                 'acf/simple-quote',
                 'acf/icon-teaser',
+                'acf/small-image-teaser',
             ],
             'core_bg_outer' => [
                 'core/columns',
@@ -337,6 +341,10 @@ class Content
         // removes inner wrapper for spacer component
         if (in_array($this->block['blockName'], $this->getContainers('no_container'))) {
             $this->setContainer('');
+        }
+
+        if (in_array($this->block['blockName'], $this->getContainers('custom_inner'))) {
+            $this->setContainer(array_search($this->block['blockName'], $this->getContainers('custom_inner')));
         }
 
         if ($this->inner) {
