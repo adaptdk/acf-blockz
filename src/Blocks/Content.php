@@ -343,10 +343,6 @@ class Content
             $this->setContainer('');
         }
 
-        if (in_array($this->block['blockName'], $this->getContainers('custom_inner'))) {
-            $this->setContainer(array_search($this->block['blockName'], $this->getContainers('custom_inner')));
-        }
-
         if ($this->inner) {
             $this->setContainer(false);
         }
@@ -394,6 +390,11 @@ class Content
         // Force inner--prose
         if (in_array($this->block['blockName'], $this->getContainers('inner_prose'), true)) {
             $this->setContainer($this->getContainerClass('sm'));
+        }
+
+        // Force custom inner
+        if (in_array($this->block['blockName'], $this->getContainers('custom_inner'))) {
+            $this->setContainer(array_search($this->block['blockName'], $this->getContainers('custom_inner')));
         }
 
         return $this;
